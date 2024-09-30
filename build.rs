@@ -1,11 +1,18 @@
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use std::env;
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use std::fs::File;
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use std::io::{Read, Write};
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use std::path::Path;
 
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use codegen::{Block, Function, Scope};
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 use roxmltree::{Document, Node};
 
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 const ALLOW_LINTS: &str = r###"
 #[allow(clippy::unreadable_literal)]
 #[allow(clippy::match_same_arms)]
@@ -13,6 +20,7 @@ const ALLOW_LINTS: &str = r###"
 "###;
 
 /// EAN.UCC prefix or registration group.
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 struct Group {
     agency: String,
     prefix: [u8; 3],
@@ -21,6 +29,7 @@ struct Group {
 }
 
 /// Range length rule.
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 struct Rule {
     min: u32,
     max: u32,
@@ -28,6 +37,7 @@ struct Rule {
 }
 
 /// Parse registration group and registrant range length rules.
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 fn parse_rules(group: Node) -> Vec<Rule> {
     group
         .descendants()
@@ -63,6 +73,7 @@ fn parse_rules(group: Node) -> Vec<Rule> {
 }
 
 /// Parse EAN.UCC prefix and registration group element.
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 fn parse_group(group: Node) -> Group {
     let prefix_str = group
         .descendants()
@@ -99,6 +110,7 @@ fn parse_group(group: Node) -> Group {
 }
 
 /// Generate code for EAN.UCC or registration group lookup.
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 fn codegen_find_group(name: &str, groups: Vec<Group>, check_registration_group: bool) -> Function {
     let mut fn_get_group = Function::new(name);
     fn_get_group.arg("prefix", "u16");
@@ -169,12 +181,15 @@ fn codegen_find_group(name: &str, groups: Vec<Group>, check_registration_group: 
     fn_get_group
 }
 
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 fn main() {
     let mut f = File::open("./isbn-ranges/RangeMessage.xml").unwrap();
     let mut text = String::new();
     f.read_to_string(&mut text).unwrap();
-    let mut options = roxmltree::ParsingOptions::default();
-    options.allow_dtd = true;
+    let options = roxmltree::ParsingOptions {
+        allow_dtd: true,
+        ..Default::default()
+    };
     let range_message = Document::parse_with_options(&text, options).unwrap();
     let ean_ucc_groups = range_message
         .descendants()
@@ -208,3 +223,6 @@ fn main() {
     writeln!(f).unwrap();
     f.write_all(scope.to_string().as_bytes()).unwrap();
 }
+
+#[cfg(not(any(feature = "runtime-ranges", feature = "ranges")))]
+fn main() {}
