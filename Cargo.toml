@@ -1,22 +1,27 @@
 [package]
-name = "isbn"
-version = "0.4.0"
-authors = ["Jihyeok Seo <ji@hyeok.org>", "Philippe Solodov <solop1906@gmail.com>"]
+name = "isbn3"
+version = "0.4.3"
+authors = ["Jihyeok Seo <limeburst@ridi.com>", "Philippe Solodov <solop1906@gmail.com>", "Oliver Schneider <oliver@assarbad.net>"]
 description = "A library for handling ISBNs."
 license = "MIT"
-repository = "https://github.com/limeburst/isbn-rs"
-edition = "2018"
+repository = "https://github.com/assarbad/isbn-rs"
+edition = "2021"
+rust-version = "1.63.0"
 
 [build-dependencies]
-codegen = "0.1"
-roxmltree = "0.14.1"
+codegen = { version = "0.2", optional = true }
+roxmltree = { version = "0.20", optional = true }
 
 [dependencies]
 arrayvec = { version = "0.7.1", default-features = false }
-quick-xml = { version = "0.22.0", optional = true }
-indexmap = { version = "1.7.0", default-features = false, optional = true }
+quick-xml = { version = "0.36", optional = true, features = ["encoding"] }
+indexmap = { version = "2.5", default-features = false, optional = true, features = ["std"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [features]
-runtime-ranges = ["quick-xml", "indexmap"]
+ranges = ["codegen", "roxmltree"]
+runtime-ranges = ["quick-xml", "indexmap", "ranges"]
 serialize = ["serde"]
+
+[package.metadata.docs.rs]
+all-features = true

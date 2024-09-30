@@ -3,27 +3,31 @@
 //! # Examples
 //!
 //! ```
-//! use isbn::{Isbn10, Isbn13};
+//! use isbn3::{Isbn10, Isbn13};
 //!
 //! let isbn_10 = Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap();
+//! #[cfg(feature = "ranges")]
 //! assert_eq!(isbn_10.hyphenate().unwrap().as_str(), "89-6626-126-4");
+//! #[cfg(feature = "ranges")]
 //! assert_eq!(isbn_10.registration_group(), Ok("Korea, Republic"));
 //! assert_eq!("89-6626-126-4".parse(), Ok(isbn_10));
 //!
 //! let isbn_13 = Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap();
+//! #[cfg(feature = "ranges")]
 //! assert_eq!(isbn_13.hyphenate().unwrap().as_str(), "978-1-4920-6766-5");
+//! #[cfg(feature = "ranges")]
 //! assert_eq!(isbn_13.registration_group(), Ok("English language"));
 //! assert_eq!("978-1-4920-6766-5".parse(), Ok(isbn_13));
 //! ```
 //!
 //! [International Standard Book Number]: https://www.isbn-international.org/
-#![cfg_attr(not(feature = "runtime-ranges"), no_std)]
+#![cfg_attr(not(any(feature = "runtime-ranges", feature = "ranges")), no_std)]
 #![deny(clippy::missing_errors_doc)]
 #![deny(clippy::if_not_else)]
 
-#[cfg(feature = "runtime-ranges")]
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 pub mod range;
-#[cfg(feature = "runtime-ranges")]
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 pub use range::IsbnRange;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -37,20 +41,25 @@ use arrayvec::{ArrayString, ArrayVec, CapacityError};
 
 pub type IsbnResult<T> = Result<T, IsbnError>;
 
+#[cfg(any(feature = "runtime-ranges", feature = "ranges"))]
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
+#[allow(dead_code)]
 struct Group<'a> {
     name: &'a str,
     segment_length: usize,
 }
 
+#[allow(dead_code)]
 trait IsbnObject {
+    #[cfg(feature = "ranges")]
     fn ean_ucc_group(&self) -> Result<Group, IsbnError> {
         Isbn::get_ean_ucc_group(self.prefix_element(), self.segment(0))
     }
 
     fn hyphenate_with(&self, hyphen_at: [usize; 2]) -> ArrayString<17>;
 
+    #[cfg(feature = "ranges")]
     fn trait_hyphenate(&self) -> Result<ArrayString<17>, IsbnError> {
         let registration_group_segment_length = self.ean_ucc_group()?.segment_length;
         let registrant_segment_length = Isbn::get_registration_group(
@@ -67,6 +76,7 @@ trait IsbnObject {
         Ok(self.hyphenate_with(hyphen_at))
     }
 
+    #[cfg(feature = "ranges")]
     fn trait_registration_group(&self) -> Result<&str, IsbnError> {
         let registration_group_segment_length = self.ean_ucc_group()?.segment_length;
 
@@ -90,7 +100,7 @@ trait IsbnObject {
 /// # Examples
 ///
 /// ```
-/// use isbn::{Isbn, Isbn10, Isbn13};
+/// use isbn3::{Isbn, Isbn10, Isbn13};
 ///
 /// let isbn_10 = Isbn::_10(Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap());
 /// let isbn_13 = Isbn::_13(Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap());
@@ -115,7 +125,7 @@ impl Isbn {
     /// * Check digit
     ///
     /// ```
-    /// use isbn::{Isbn, Isbn10, Isbn13};
+    /// use isbn3::{Isbn, Isbn10, Isbn13};
     ///
     /// let isbn_10 = Isbn::_10(Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap());
     /// let isbn_13 = Isbn::_13(Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap());
@@ -126,6 +136,7 @@ impl Isbn {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn hyphenate(&self) -> Result<ArrayString<17>, IsbnError> {
         match self {
             Isbn::_10(ref c) => c.hyphenate(),
@@ -136,7 +147,7 @@ impl Isbn {
     /// Retrieve the name of the registration group.
     ///
     /// ```
-    /// use isbn::{Isbn, Isbn10, Isbn13};
+    /// use isbn3::{Isbn, Isbn10, Isbn13};
     ///
     /// let isbn_10 = Isbn::_10(Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap());
     /// let isbn_13 = Isbn::_13(Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap());
@@ -148,6 +159,7 @@ impl Isbn {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn registration_group(&self) -> Result<&str, IsbnError> {
         match self {
             Isbn::_10(ref c) => c.registration_group(),
@@ -161,7 +173,7 @@ impl Isbn {
 /// # Examples
 ///
 /// ```
-/// use isbn::{Isbn, Isbn10, Isbn13};
+/// use isbn3::{Isbn, Isbn10, Isbn13};
 ///
 /// let isbn_10 = Isbn::_10(Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap());
 /// let isbn_13 = Isbn::_13(Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap());
@@ -180,7 +192,7 @@ impl<'a> From<&'a Isbn> for IsbnRef<'a> {
     fn from(isbn: &'a Isbn) -> Self {
         match isbn {
             Isbn::_10(isbn) => isbn.into(),
-            Isbn::_13(isbn) => isbn.into()
+            Isbn::_13(isbn) => isbn.into(),
         }
     }
 }
@@ -290,7 +302,7 @@ impl Isbn10 {
     /// # Examples
     ///
     /// ```
-    /// use isbn::Isbn10;
+    /// use isbn3::Isbn10;
     ///
     /// let isbn10 = Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap();
     /// ```
@@ -311,7 +323,7 @@ impl Isbn10 {
     /// Convert ISBN-13 to ISBN-10, if applicable.
     ///
     /// ```
-    /// use isbn::{Isbn10, Isbn13};
+    /// use isbn3::{Isbn10, Isbn13};
     ///
     /// let isbn_13 = Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap();
     /// assert_eq!(Isbn10::try_from(isbn_13), "1-4920-6766-0".parse());
@@ -352,7 +364,7 @@ impl Isbn10 {
     /// * Check digit
     ///
     /// ```
-    /// use isbn::Isbn10;
+    /// use isbn3::Isbn10;
     ///
     /// let isbn_10 = Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap();
     /// assert_eq!(isbn_10.hyphenate().unwrap().as_str(), "89-6626-126-4");
@@ -360,6 +372,7 @@ impl Isbn10 {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn hyphenate(&self) -> Result<ArrayString<17>, IsbnError> {
         self.trait_hyphenate()
     }
@@ -367,7 +380,7 @@ impl Isbn10 {
     /// Retrieve the name of the registration group.
     ///
     /// ```
-    /// use isbn::Isbn10;
+    /// use isbn3::Isbn10;
     ///
     /// let isbn_10 = Isbn10::new([8, 9, 6, 6, 2, 6, 1, 2, 6, 4]).unwrap();
     /// assert_eq!(isbn_10.registration_group(), Ok("Korea, Republic"));
@@ -375,6 +388,7 @@ impl Isbn10 {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn registration_group(&self) -> Result<&str, IsbnError> {
         self.trait_registration_group()
     }
@@ -458,7 +472,7 @@ impl Isbn13 {
     /// # Examples
     ///
     /// ```
-    /// use isbn::Isbn13;
+    /// use isbn3::Isbn13;
     ///
     /// let isbn13 = Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap();
     /// ```
@@ -497,7 +511,7 @@ impl Isbn13 {
     /// * Check digit
     ///
     /// ```
-    /// use isbn::Isbn13;
+    /// use isbn3::Isbn13;
     ///
     /// let isbn_13 = Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap();
     /// assert_eq!(isbn_13.hyphenate().unwrap().as_str(), "978-1-4920-6766-5");
@@ -505,6 +519,7 @@ impl Isbn13 {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn hyphenate(&self) -> Result<ArrayString<17>, IsbnError> {
         self.trait_hyphenate()
     }
@@ -512,7 +527,7 @@ impl Isbn13 {
     /// Retrieve the name of the registration group.
     ///
     /// ```
-    /// use isbn::Isbn13;
+    /// use isbn3::Isbn13;
     ///
     /// let isbn_13 = Isbn13::new([9, 7, 8, 1, 4, 9, 2, 0, 6, 7, 6, 6, 5]).unwrap();
     /// assert_eq!(isbn_13.registration_group(), Ok("English language"));
@@ -520,6 +535,7 @@ impl Isbn13 {
     /// # Errors
     /// If the ISBN is not valid, as determined by the current ISBN rules, an error will be
     /// returned.
+    #[cfg(feature = "ranges")]
     pub fn registration_group(&self) -> Result<&str, IsbnError> {
         self.trait_registration_group()
     }
@@ -705,6 +721,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "ranges")]
     fn test_hyphens_no_panic() {
         assert!(Isbn::from_str("0-9752298-0-X").unwrap().hyphenate().is_ok());
         assert!(Isbn::from_str("978-3-16-148410-0")
